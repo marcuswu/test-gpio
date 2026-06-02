@@ -63,17 +63,7 @@ int main(void)
 	gpio_config();
 	while (1) {
 		gpio_data = 0;
-		// gpio_port_get(port, &gpio_data);
-		for (int i = 0; i < NUM_BUTTONS; i++) {
-			int pin_val = gpio_pin_get_dt(&buttons[i]);
-			if (pin_val < 0) {
-				LOG_ERR("Failed to read GPIO pin %d: %d", i, pin_val);
-				continue;
-			}
-			if (pin_val) {
-				gpio_data |= BIT(buttons[i].pin);
-			}
-		}
+		gpio_port_get(port, &gpio_data);
 		LOG_INF("GPIO data: 0x%08X", gpio_data);
 		k_msleep(SLEEP_TIME_MS);
 	}
