@@ -7,9 +7,10 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/hwinfo.h>
 
 /* 1000 msec = 1 sec */
-#define SLEEP_TIME_MS   500
+#define SLEEP_TIME_MS   100
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
@@ -48,7 +49,7 @@ void gpio_config(void)
 		return;
 	}
 	for (int i = 0; i < NUM_BUTTONS; i++) {
-		int err = gpio_pin_configure(buttons[i].port, buttons[i].pin, GPIO_INPUT | GPIO_PULL_UP | GPIO_ACTIVE_LOW);
+		int err = gpio_pin_configure_dt(&buttons[i], GPIO_INPUT | GPIO_PULL_UP | GPIO_ACTIVE_LOW);
 		if (err != 0) {
 			LOG_ERR("Failed to configure GPIO pin %d: %d", i, err);
 			continue;
@@ -58,11 +59,22 @@ void gpio_config(void)
 
 int main(void)
 {
-	int gpio_data = 0;
+	uint32_t gpio_data = 0;
 	gpio_config();
 	while (1) {
-		gpio_port_get(port, &gpio_data);
-		LOG_INF("Raw GPIO data: 0x%08X", gpio_data);
+		gpio_data = 0;
+		// gpio_port_get(port, &gpio_data);
+		for (int i = 0; i < NUM_BUTTONS; i++) {
+			int pin_val = gpio_pin_get_dt(&buttons[i]);
+			if (pin_val < 0) {
+				LOG_ERR("Failed to read GPIO pin %d: %d", i, pin_val);
+				continue;
+			}
+			if (pin_val) {
+				gpio_data |= BIT(buttons[i].pin);
+			}
+		}
+		LOG_INF("GPIO data: 0x%08X", gpio_data);
 		k_msleep(SLEEP_TIME_MS);
 	}
 	return 0;
